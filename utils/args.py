@@ -53,9 +53,9 @@ def parse_args():
         default=timezone.utc,
     )
 
-    parser.add_argument('--block-time-number', type=float, help='Number of the latest block to evaluate average block time', required=False, default=30)
+    parser.add_argument('--block-time-number', type=int, help='Number of the latest block to evaluate average block time', required=False, default=30)
 
-    parser.add_argument('--columns', type=float, help='Number of columns in the main table', required=False, default=3)
+    parser.add_argument('--columns', type=int, help='Number of columns in the main table', required=False, default=3)
     args = parser.parse_args()
 
     return args
