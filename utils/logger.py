@@ -36,7 +36,7 @@ def set_up_logger(log_lvl: str, log_path: str) -> logging.Logger:
             "rich_panel": {
                 "class":  "utils.custom_handler.RichPanelLogHandler",
                 "level": log_lvl.upper(),
-                "max_logs": 10,
+                "max_logs": 5,
                 "formatter": "default",
             }
         },

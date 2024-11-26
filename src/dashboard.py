@@ -33,7 +33,6 @@ class ConsensusDashboard:
                 self.rich_logger = handler
                 break
         
-        
         self.layout = Layout()
         self.console = Console()
         self.validators = []
@@ -64,20 +63,21 @@ class ConsensusDashboard:
 
 
         self.layout.split_column(
-            Layout(name="header", ratio=2),
+            Layout(name="header", ratio=1),
             Layout(name="main", ratio=5),
-            Layout(name="footer", ratio=2)
+            # Layout(name="footer", ratio=1)
         )
 
         self.layout["header"].split_row(
             Layout(name="network_info", ratio=1),
-            Layout(name="consensus_info", ratio=1)
+            Layout(name="consensus_info", ratio=1),
+            Layout(name="logs", ratio=1)
         )
 
-        self.layout["footer"].split_row(
-            Layout(name="votes_commits_step_bar", ratio=1),
-            Layout(name="logs", ratio=2)
-        )
+        # self.layout["footer"].split_row(
+            # Layout(name="votes_commits_step_bar", ratio=1),
+            # Layout(name="logs", ratio=1)
+        # )
 
     async def update_node_status(self):
         try:
@@ -321,7 +321,7 @@ class ConsensusDashboard:
                 while True:
                     log_renderable = self.rich_logger.get_logs()
                     log_panel = Panel(log_renderable, expand=True, box=box.SIMPLE)
-                    self.layout["footer"]["logs"].update(log_panel)
+                    self.layout["header"]["logs"].update(log_panel)
 
                     if not hasattr(self, "_last_upgrade_update") or (asyncio.get_event_loop().time() - self._last_upgrade_update) >= self.refresh_upgarde_plan:
                         await self.update_upgrade()
@@ -351,15 +351,18 @@ class ConsensusDashboard:
                         precommit_bar = self.create_bar("[Precommits]", self.consensus_state['precommits_array'])
                         step_bar = self.create_step_bar("[   Step   ]", self.consensus_state['round'])
 
-                        votes_commits_renderable = f"{prevote_bar}\n{precommit_bar}\n{step_bar}"
-                        votes_commits_panel = Panel(votes_commits_renderable, title="Prevotes & Precommits", border_style="yellow")
-                        self.layout["footer"]["votes_commits_step_bar"].update(votes_commits_panel)
+                        # votes_commits_renderable = f"{prevote_bar}\n{precommit_bar}\n{step_bar}"
+                        # votes_commits_panel = Panel(votes_commits_renderable, title="Prevotes & Precommits", border_style="yellow")
+                        # self.layout["footer"]["votes_commits_step_bar"].update(votes_commits_panel)
+
                         consensus_info += f"[bold cyan]Height/Round/Step:[/bold cyan] {self.consensus_state['height']}/{self.consensus_state['round']}/{self.consensus_state['step']}\n"
                         consensus_info += f"[bold cyan]Proposer:[/bold cyan] {self.consensus_state['proposer_moniker']}\n"
                         consensus_info += f"[bold cyan]Online validators:[/bold cyan] {self.online_validators} / {len(self.validators)}\n"
                         consensus_info += f"[bold cyan]Offline validators:[/bold cyan] {len(self.validators) - self.online_validators}\n"
                         consensus_info += f"[bold cyan]Prevoting validators:[/bold cyan] {self.prevoting_validators}\n"
                         consensus_info += f"[bold cyan]Precommitting validators:[/bold cyan] {self.precommitting_validators}\n"
+
+                        consensus_info += f"{prevote_bar}\n{precommit_bar}\n{step_bar}"
                         consensus_info_panel = Panel(consensus_info, title="Consensus Info", border_style="green", expand=True)
                         self.layout["header"]["consensus_info"].update(consensus_info_panel)
 
