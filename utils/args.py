@@ -28,7 +28,7 @@ def validate_log_level(value: str) -> str:
 def parse_args():
     parser = argparse.ArgumentParser(description="Global arguments for the application", formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--log-lvl', default='INFO', type=validate_log_level, help='Set the logging level [DEBUG, INFO, WARNING, ERROR]')
-    parser.add_argument('--log-path', type=str, default='logs/logs.log', help='Path to the log file')
+    parser.add_argument('--log-path', type=str, help='Path to the log file. If not provided, logs will not be stored', required=False)
     parser.add_argument('--rpc', type=str, help='RPC server http/s', required=True)
 
 
@@ -37,7 +37,13 @@ def parse_args():
         action='store_true',
         help='Disable emojis in dashboard output (use in case emojis break the table)'
     )
-    
+
+    parser.add_argument(
+        '--hashes',
+        action='store_true',
+        help="Instead of emojis/symbols output validator's votes (hashes)"
+    )
+
     parser.add_argument('--refresh-per-second', type=float, help='Refresh rate of the table per second', required=False, default=5)
     parser.add_argument('--refresh-validators', type=float, help='Refresh validators every N second', required=False, default=10)
     parser.add_argument('--refresh-consensus-state', type=float, help='Refresh consensus state every N second', required=False, default=0.5)

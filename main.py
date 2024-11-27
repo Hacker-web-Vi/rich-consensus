@@ -17,7 +17,8 @@ async def start_dashboard():
             refresh_block_time= args.refresh_block_time,
             user_tz=args.tz,
             block_time_number=args.block_time_number,
-            columns=args.columns
+            columns=args.columns,
+            hashes=args.hashes
             )
         await dashboard.start()
     except (asyncio.CancelledError, KeyboardInterrupt):

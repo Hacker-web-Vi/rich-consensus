@@ -23,7 +23,8 @@ class ConsensusDashboard:
                  refresh_block_time: int,
                  user_tz: timedelta,
                  block_time_number: int,
-                 columns: int
+                 columns: int,
+                 hashes: bool
                  ):
         
         self.rpc = rpc
@@ -57,6 +58,7 @@ class ConsensusDashboard:
         self.refresh_node = refresh_node
         self.refresh_block_time = refresh_block_time
         self.disable_emojis = disable_emojis
+        self.hashes = hashes
         self.block_time_check_number = block_time_number
         self.columns = columns
         self.user_tz = user_tz
@@ -65,7 +67,7 @@ class ConsensusDashboard:
         self.layout.split_column(
             Layout(name="header", ratio=1),
             Layout(name="main", ratio=5),
-            # Layout(name="footer", ratio=1)
+            Layout(name="footer", ratio=1)
         )
 
         self.layout["header"].split_row(
@@ -75,8 +77,7 @@ class ConsensusDashboard:
         )
 
         # self.layout["footer"].split_row(
-            # Layout(name="votes_commits_step_bar", ratio=1),
-            # Layout(name="logs", ratio=1)
+            # Layout(name="votes_commits_step_bar"),
         # )
 
     async def update_node_status(self):
@@ -256,7 +257,7 @@ class ConsensusDashboard:
             return
         
     def create_bar(self, label: str, value: float) -> str:
-        bar_length = 40
+        bar_length = 60
         filled_length = int(value * bar_length // 100)
         if self.disable_emojis:
             bar = 'X' * filled_length + '-' * (bar_length - filled_length)
@@ -266,7 +267,7 @@ class ConsensusDashboard:
 
     def create_step_bar(self, label: str, value: float, _max: float = 6) -> str:
         value = max(0, min(value, _max))
-        bar_length = 40
+        bar_length = 60
         filled_length = int(value * bar_length // _max)
         if self.disable_emojis:
             bar = 'X' * filled_length + '-' * (bar_length - filled_length)
@@ -285,24 +286,34 @@ class ConsensusDashboard:
         self.consensus_state['proposer_moniker'] = 'N/A'
         for index, validator in enumerate(self.validators):
             column_index = index % self.columns
-            moniker = validator['moniker'][:15].ljust(20)
+            moniker = validator['moniker'][:15].ljust(18)
             _hex_short = validator['hex'][:12]
             _voting_power = validator['vp']
 
             if self.consensus_state['proposer_hex'] == validator['hex']:
                 self.consensus_state['proposer_moniker'] = validator['moniker']
 
-            _prevoted = "[ V ]" if self.disable_emojis else "✅"
-            _not_prevoted = "[ X ]" if self.disable_emojis else "❌"
+            _prevote = self.consensus_state['hex_prevote'].get(_hex_short)
+            _precommit = self.consensus_state['hex_precommit'].get(_hex_short)
+            _index_str = f"{index + 1}.".ljust(4)
 
-            prevote_emoji = _prevoted if self.consensus_state['hex_prevote'].get(_hex_short) else _not_prevoted
-            precommit_emoji = _prevoted if self.consensus_state['hex_precommit'].get(_hex_short) else _not_prevoted
+            if self.hashes:
+                _symbol = _prevote if _prevote else "[X]".ljust(12)
+                _color = 'bold green' if _prevote else 'bold red'
+                column_data[column_index].append(
+                    f"{_index_str}{moniker}{_voting_power:.1f}%  [{_color}]{_symbol}[/{_color}]"
+                )
 
-            index_str = f"{index + 1}.".ljust(4)
+            else:
+                _positive_symbol = "[bold green][V][/bold green]" if self.disable_emojis else "✅"
+                _negative_symbol = "[bold red][X][/bold red]" if self.disable_emojis else "❌"
 
-            column_data[column_index].append(
-                f"{index_str}{moniker}{prevote_emoji}{precommit_emoji.ljust(7)}{_voting_power:.1f}%"
-            )
+                _first_symbol = _positive_symbol if _prevote else _negative_symbol
+                _second_symbol = _positive_symbol if _precommit else _negative_symbol
+
+                column_data[column_index].append(
+                    f"{_index_str}{moniker}{_voting_power:.1f}%  {_first_symbol}{_second_symbol.ljust(10)}"
+                )
 
         max_rows = max(len(col) for col in column_data)
         for row_index in range(max_rows):
@@ -351,18 +362,19 @@ class ConsensusDashboard:
                         precommit_bar = self.create_bar("[Precommits]", self.consensus_state['precommits_array'])
                         step_bar = self.create_step_bar("[   Step   ]", self.consensus_state['round'])
 
-                        # votes_commits_renderable = f"{prevote_bar}\n{precommit_bar}\n{step_bar}"
-                        # votes_commits_panel = Panel(votes_commits_renderable, title="Prevotes & Precommits", border_style="yellow")
-                        # self.layout["footer"]["votes_commits_step_bar"].update(votes_commits_panel)
+                        votes_commits_renderable = f"{prevote_bar}\n{precommit_bar}\n{step_bar}"
+                        votes_commits_panel = Panel(votes_commits_renderable, box=box.SIMPLE, expand=True)
+                        self.layout["footer"].update(votes_commits_panel)
 
                         consensus_info += f"[bold cyan]Height/Round/Step:[/bold cyan] {self.consensus_state['height']}/{self.consensus_state['round']}/{self.consensus_state['step']}\n"
                         consensus_info += f"[bold cyan]Proposer:[/bold cyan] {self.consensus_state['proposer_moniker']}\n"
+                        consensus_info += f"[bold cyan]Proposal Hash:[/bold cyan] {self.consensus_state['hash'] or 'N/A'}\n"
                         consensus_info += f"[bold cyan]Online validators:[/bold cyan] {self.online_validators} / {len(self.validators)}\n"
                         consensus_info += f"[bold cyan]Offline validators:[/bold cyan] {len(self.validators) - self.online_validators}\n"
                         consensus_info += f"[bold cyan]Prevoting validators:[/bold cyan] {self.prevoting_validators}\n"
                         consensus_info += f"[bold cyan]Precommitting validators:[/bold cyan] {self.precommitting_validators}\n"
 
-                        consensus_info += f"{prevote_bar}\n{precommit_bar}\n{step_bar}"
+                        # consensus_info += f"{prevote_bar}\n{precommit_bar}\n{step_bar}"
                         consensus_info_panel = Panel(consensus_info, title="Consensus Info", border_style="green", expand=True)
                         self.layout["header"]["consensus_info"].update(consensus_info_panel)
 
